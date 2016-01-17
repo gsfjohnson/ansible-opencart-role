@@ -1,12 +1,19 @@
 ---
+# only tested on centos67
+
+- name: register stat of /etc/sysconfig/selinux
+  stat: path=/etc/sysconfig/selinux
+  register: st
 
 - name: disable selinux
   selinux: policy=targeted state=permissive
+  when: st.stat.exists
 
 - name: disable selinux on boot
   lineinfile: dest={{item}} regexp=^SELINUX= line=SELINUX=permissive
   with_items:
-  - /etc/sysconfig/selinux
+    - /etc/sysconfig/selinux
+  when: st.stat.exists
 
 - name: install pkgs
   yum: name={{item}} state=installed
