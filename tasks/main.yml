@@ -35,10 +35,10 @@
 - name: unzip opencart in /tmp
   unarchive: src=/tmp/opencart-{{oc_version}}.zip dest=/tmp copy=no creates=/tmp/opencart-{{oc_version}}
 
-- name: upload opencart into /var/www/html
-  command: "cp -a /tmp/opencart-{{oc_version}}/upload/{{item}} /var/www/html"
+- name: upload opencart into {{oc_web_dir}}
+  command: "cp -a /tmp/opencart-{{oc_version}}/upload/{{item}} {{oc_web_dir}}"
   args:
-    creates: /var/www/html/admin
+    creates: "{{oc_web_dir}}/admin"
   with_items:
     - catalog
     - crossdomain.xml
@@ -50,13 +50,13 @@
     - admin
 
 - name: touch config-dest.php
-  copy: content="" dest=/var/www/html/{{item}} force=no
+  copy: content="" dest={{oc_web_dir}}/{{item}} force=no
   with_items:
     - config.php
     - admin/config.php
 
 - name: chmod g+w and chown apache:apache
-  file: path=/var/www/html/{{item}} owner=apache group=apache mode=0775
+  file: path={{oc_web_dir}}/{{item}} owner=apache group=apache mode=0775
   with_items:
     - image
     - image/cache
@@ -68,7 +68,7 @@
     - system/storage/modification
 
 - name: chmod g+w and chown apache:apache
-  file: path=/var/www/html/{{item}} owner=apache group=apache mode=0664
+  file: path={{oc_web_dir}}/{{item}} owner=apache group=apache mode=0664
   with_items:
     - config.php
     - admin/config.php
@@ -82,16 +82,23 @@
 - name: create opencart db in mysql
   mysql_db: name=opencart state=present
 
-- name: get status of /var/www/html/install directory
-  stat: path=/var/www/html/install
+- name: stat {{oc_web_dir}}/install
+  stat: path={{oc_web_dir}}/install
   register: st
 
 - name: install opencart
-  command: php cli_install.php install --db_hostname {{oc_db_host}} --db_username {{oc_db_user}} --db_password {{oc_db_pass}} --db_database {{oc_db_db}} --db_driver {{oc_db_drv}} --username {{oc_web_user}} --password {{oc_web_pass}} --email {{oc_email}} --http_server {{oc_web_url}}
-  args:
-    chdir: /var/www/html/install
-  when: st.stat.exists != "true"
+  command: "php {{oc_web_dir}}/install/cli_install.php install --db_hostname {{oc_db_host}} --db_username {{oc_db_user}} --db_password {{oc_db_pass}} --db_database {{oc_db_db}} --db_driver {{oc_db_drv}} --username {{oc_web_user}} --password {{oc_web_pass}} --email {{oc_email}} --http_server {{oc_web_url}}"
+  when: st.stat.exists
 
 - name: remove opencart install dir
-  file: state=absent dest=/var/www/html/install
+  file: state=absent dest={{oc_web_dir}}/install
 
+- name: upload images
+  copy: src=files/{{item.name}} dest={{oc_web_dir}}/image/catalog/{{item.name}} mode=0664 owner=apache group=apache
+  when: item.url is not defined
+  with_items: oc_images
+
+- name: download images
+  get_url: url={{item.url}} dest={{oc_web_dir}}/image/catalog/{{item.name}} mode=0664 owner=apache group=apache
+  when: item.url is defined
+  with_items: oc_images
