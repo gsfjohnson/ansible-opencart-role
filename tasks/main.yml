@@ -15,7 +15,7 @@
     - /etc/sysconfig/selinux
   when: st.stat.exists
 
-- name: install pkgs
+- name: install php pkgs
   yum: name={{item}} state=installed
   with_items:
     - php
@@ -23,22 +23,33 @@
     - php-gd
     - php-mcrypt
     - php-cli
+  when: oc_install_php
+
+- name: install httpd pkgs
+  yum: name={{item}} state=installed
+  with_items:
     - httpd
     - mod_ssl
+  when: oc_install_httpd
+
+- name: install unzip
+  yum: name={{item}} state=installed
+  with_items:
     - unzip
-    - MySQL-python
 
 - name: install db server el6
   yum: name={{item}} state=installed
   with_items:
+    - MySQL-python
     - mysql-server
-  when: ansible_os_family == "RedHat" and ansible_distribution_major_version == '6'
+  when: ansible_os_family == "RedHat" and ansible_distribution_major_version == '6' and oc_install_mysqld
 
 - name: install db server el7
   yum: name={{item}} state=installed
   with_items:
+    - MySQL-python
     - mariadb-server
-  when: ansible_os_family == "RedHat" and ansible_distribution_major_version == '7'
+  when: ansible_os_family == "RedHat" and ansible_distribution_major_version == '7' and oc_install_mysqld
 
 - name: download opencart to /tmp
   get_url: url={{oc_download_url}} dest=/tmp/opencart-{{oc_version}}.zip
