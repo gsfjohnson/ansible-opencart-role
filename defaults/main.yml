@@ -21,6 +21,14 @@ oc_images: []
 #  - name: tomato.jpg
 #    url: https://timewellness.files.wordpress.com/2012/09/tomato.jpg?w=480&h=320&crop=1
 
+oc_mysql_import: []
+#  - name: database
+#    target: /tmp/schema.sql
+
+oc_extensions: []
+#  - file: filename.zip
+#    creates: /var/www/html/askoapsdkop
+
 oc_install_php: true
 oc_install_httpd: true
 oc_install_mysqld: true

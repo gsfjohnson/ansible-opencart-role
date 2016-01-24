@@ -135,3 +135,16 @@
   get_url: url={{item.url}} dest={{oc_web_dir}}/image/catalog/{{item.name}} mode=0664 owner=apache group=apache
   when: item.url is defined
   with_items: oc_images
+
+- name: import schema
+  mysql_db:
+    name={{ item.name }}
+    state=import
+    target={{ item.target }}
+  with_items: oc_mysql_import
+
+- name: upload extensions
+  unarchive: src={{item.file}} dest={{oc_web_dir}} creates={{item.creates}}
+  with_items: oc_extensions
+  when: item.creates is defined and item.file is defined
+
