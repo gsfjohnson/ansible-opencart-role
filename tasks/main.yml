@@ -154,7 +154,9 @@
   when: item.creates is defined and item.url is defined
 
 - name: link extensions from /vagrant
-  file: dest={{oc_web_dir}}/{{item.file}} src=/vagrant/{{item.extension}}/{{item.file}} state=link
-  with_items: oc_extensions
-  when: item.extension is defined and item.file is defined
+  file: dest={{oc_web_dir}}/{{item.1}} src=/vagrant/{{item.0.extension}}/{{item.1}} state=link
+  with_subelements:
+    - oc_extensions
+    - files
+  when: item.0.extension is defined and item.1 is defined
 

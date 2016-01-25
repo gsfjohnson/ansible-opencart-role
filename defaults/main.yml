@@ -31,7 +31,8 @@ oc_extensions: []
 #  - url: https://github.com/....../0.1.1.zip
 #    creates: /var/www/html/admin/controller/shipping/flat.php
 #  - extension: directoryname
-#    file: admin/controller/shipping/flat.php
+#    files:
+#      - admin/controller/shipping/flat.php
 
 oc_install_php: false
 oc_install_httpd: false
