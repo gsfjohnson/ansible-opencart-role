@@ -143,8 +143,18 @@
     target={{ item.target }}
   with_items: oc_mysql_import
 
-- name: upload extensions
+- name: upload local extensions
   unarchive: src={{item.file}} dest={{oc_web_dir}} creates={{item.creates}}
   with_items: oc_extensions
   when: item.creates is defined and item.file is defined
+
+- name: download extensions from internet
+  unarchive: src={{item.url}} dest={{oc_web_dir}} creates={{item.creates}} copy=no
+  with_items: oc_extensions
+  when: item.creates is defined and item.url is defined
+
+- name: link extensions from /vagrant
+  file: dest={{oc_web_dir}}/{{item.file}} src=/vagrant/{{item.extension}}/{{item.file}} state=link
+  with_items: oc_extensions
+  when: item.extension is defined and item.file is defined
 
