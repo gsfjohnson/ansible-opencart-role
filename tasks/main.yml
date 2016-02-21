@@ -19,11 +19,10 @@
   yum: name={{item}} state=installed
   with_items:
     - php
-    - php-mysql
-    - php-gd
     - php-mcrypt
+    - php-gd
+    - php-mysql
     - php-cli
-  when: oc_install_php
 
 - name: install httpd pkgs
   yum: name={{item}} state=installed
@@ -120,7 +119,7 @@
   register: st
 
 - name: install opencart
-  command: "php {{oc_web_dir}}/install/cli_install.php install --db_hostname {{oc_db_host}} --db_username {{oc_db_user}} --db_password {{oc_db_pass}} --db_database {{oc_db_db}} --db_driver {{oc_db_drv}} --username {{oc_web_user}} --password {{oc_web_pass}} --email {{oc_email}} --http_server {{oc_web_url}}"
+  command: "php {{oc_web_dir}}/install/cli_install.php install --db_hostname {{oc_db_host}} --db_username {{oc_db_user}} --db_password {{oc_db_pass}} --db_database {{oc_db_db}} --db_driver {{oc_db_drv}} --username {{oc_web_user}} --password {{oc_web_pass}} --email {{oc_email}} --http_server http://{{oc_web_host}}{{oc_web_path}}"
   when: st.stat.exists
 
 - name: remove opencart install dir
@@ -168,4 +167,10 @@
     - oc_extensions
     - files
   when: item.0.name is defined and item.0.source is defined and item.0.source == 'link' and item.1 is defined
+
+- name: config.php template
+  template: src=config.php.j2 dest={{oc_web_dir}}/config.php
+
+- name: admin/config.php template
+  template: src=config.php.j2 dest={{oc_web_dir}}/admin/config.php
 

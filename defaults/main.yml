@@ -12,7 +12,9 @@ oc_db_drv: mysqli
 oc_web_user: admin
 oc_web_pass: admin
 oc_email: root@localhost
-oc_web_url: http://localhost:8080/
+oc_web_host: localhost:8080
+oc_web_path: 
+oc_web_ssl: false
 
 oc_images: []
 #  - name: logo.png
@@ -34,7 +36,6 @@ oc_extensions: []
 #    files:
 #      - admin/controller/shipping/flat.php
 
-oc_install_php: false
 oc_install_httpd: false
 oc_install_mysqld: false
 
