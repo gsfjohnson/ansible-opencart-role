@@ -50,16 +50,20 @@
     - mariadb-server
   when: ansible_os_family == "RedHat" and ansible_distribution_major_version == '7' and oc_install_mysqld
 
-- name: download opencart to /tmp
+- name: download {{oc_download_url}} to /tmp
   get_url: url={{oc_download_url}} dest=/tmp/opencart-{{oc_version}}.zip
 
 - name: unzip opencart in /tmp
   unarchive: src=/tmp/opencart-{{oc_version}}.zip dest=/tmp copy=no creates=/tmp/opencart-{{oc_version}}
 
+- name: stat {{oc_web_dir}}/install
+  stat: path={{oc_web_dir}}/install
+  register: statinstalldir
+
 - name: upload opencart into {{oc_web_dir}}
   command: "cp -a /tmp/opencart-{{oc_version}}/upload/{{item}} {{oc_web_dir}}"
   args:
-    creates: "{{oc_web_dir}}/admin"
+    creates: "{{oc_web_dir}}/{{item}}"
   with_items:
     - catalog
     - crossdomain.xml
@@ -67,11 +71,18 @@
     - index.php
     - php.ini
     - system
-    - install
     - admin
 
-- name: touch config-dest.php
-  copy: content="" dest={{oc_web_dir}}/{{item}} force=no
+- name: upload opencart into {{oc_web_dir}}
+  command: "cp -a /tmp/opencart-{{oc_version}}/upload/{{item}} {{oc_web_dir}}"
+  args:
+    creates: "{{oc_web_dir}}/{{item}}"
+  with_items:
+    - install
+  when: not statinstalldir.stat.exists
+
+- name: touch config.php
+  copy: content="" dest={{oc_web_dir}}/{{item}} force=no owner=apache group=apache mode=0664
   with_items:
     - config.php
     - admin/config.php
@@ -116,14 +127,18 @@
 
 - name: stat {{oc_web_dir}}/install
   stat: path={{oc_web_dir}}/install
-  register: st
+  register: statinstalldir
 
-- name: install opencart
-  command: "php {{oc_web_dir}}/install/cli_install.php install --db_hostname {{oc_db_host}} --db_username {{oc_db_user}} --db_password {{oc_db_pass}} --db_database {{oc_db_db}} --db_driver {{oc_db_drv}} --username {{oc_web_user}} --password {{oc_web_pass}} --email {{oc_email}} --http_server http://{{oc_web_host}}{{oc_web_path}}"
-  when: st.stat.exists
+- name: run install/cli_install.php install
+  command: "php {{oc_web_dir}}/install/cli_install.php install --db_hostname {{oc_db_host}} --db_username {{oc_db_user}} --db_password {{oc_db_pass}} --db_database {{oc_db_db}} --db_driver {{oc_db_drv}} --username {{oc_web_user}} --password {{oc_web_pass}} --email {{oc_email}} --http_server http://{{oc_web_host}}{{oc_web_path}}/"
+  when: statinstalldir.stat.exists and statinstalldir.stat.isdir
 
 - name: remove opencart install dir
   file: state=absent dest={{oc_web_dir}}/install
+  when: statinstalldir.stat.exists and statinstalldir.stat.isdir
+
+- name: touch install
+  copy: content="" dest={{oc_web_dir}}/install force=no owner=apache group=apache mode=0664
 
 - name: upload images
   copy: src=files/{{item.name}} dest={{oc_web_dir}}/image/catalog/{{item.name}} mode=0664 owner=apache group=apache
@@ -169,8 +184,8 @@
   when: item.0.name is defined and item.0.source is defined and item.0.source == 'link' and item.1 is defined
 
 - name: config.php template
-  template: src=config.php.j2 dest={{oc_web_dir}}/config.php
-
-- name: admin/config.php template
-  template: src=config.php.j2 dest={{oc_web_dir}}/admin/config.php
+  template: src=config.php.j2 dest={{oc_web_dir}}/{{item}}
+  with_items:
+    - config.php
+    - admin/config.php
 

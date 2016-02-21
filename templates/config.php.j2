@@ -1,19 +1,47 @@
 <?php
 
 // HTTP
+{% if item is defined and item == 'config.php' %}
 define('HTTP_SERVER', 'http://{{oc_web_host}}{{oc_web_path}}/');
 define('HTTP_ADMIN', 'http://{{oc_web_host}}{{oc_web_path}}/admin/');
+{% elif item is defined and item == 'admin/config.php' %}
+define('HTTP_SERVER', 'http://{{oc_web_host}}{{oc_web_path}}/admin/');
+define('HTTP_CATALOG', 'http://{{oc_web_host}}{{oc_web_path}}/');
+{% endif %}
 
 // HTTPS
+{% if item is defined and item == 'config.php' %}
+{% if oc_web_ssl %}
 define('HTTPS_SERVER', 'https://{{oc_web_host}}{{oc_web_path}}/');
+{% else %}
+define('HTTPS_SERVER', 'http://{{oc_web_host}}{{oc_web_path}}/');
+{% endif %}
+{% elif item is defined and item == 'admin/config.php' %}
+{% if oc_web_ssl %}
+define('HTTPS_SERVER', 'https://{{oc_web_host}}{{oc_web_path}}/admin/');
+define('HTTPS_CATALOG', 'https://{{oc_web_host}}{{oc_web_path}}/');
 define('HTTPS_IMAGE', 'https://{{oc_web_host}}{{oc_web_path}}/image/');
+{% else %}
+define('HTTPS_SERVER', 'http://{{oc_web_host}}{{oc_web_path}}/admin/');
+define('HTTPS_CATALOG', 'http://{{oc_web_host}}{{oc_web_path}}/');
+{% endif %}
+{% endif %}
 
 // DIR
+{% if item is defined and item == 'config.php' %}
 define('DIR_APPLICATION', '{{oc_web_dir}}/catalog/');
+{% elif item is defined and item == 'admin/config.php' %}
+define('DIR_APPLICATION', '{{oc_web_dir}}/admin/');
+{% endif %}
 define('DIR_SYSTEM', '{{oc_web_dir}}/system/');
 define('DIR_DATABASE', '{{oc_web_dir}}/system/database/');
+{% if item is defined and item == 'config.php' %}
 define('DIR_LANGUAGE', '{{oc_web_dir}}/catalog/language/');
 define('DIR_TEMPLATE', '{{oc_web_dir}}/catalog/view/theme/');
+{% elif item is defined and item == 'admin/config.php' %}
+define('DIR_LANGUAGE', '{{oc_web_dir}}/admin/language/');
+define('DIR_TEMPLATE', '{{oc_web_dir}}/admin/view/template/');
+{% endif %}
 define('DIR_CONFIG', '{{oc_web_dir}}/system/config/');
 define('DIR_IMAGE', '{{oc_web_dir}}/image/');
 define('DIR_CACHE', '{{oc_web_dir}}/system/storage/cache/');
@@ -21,6 +49,9 @@ define('DIR_DOWNLOAD', '{{oc_web_dir}}/system/storage/download/');
 define('DIR_UPLOAD', '{{oc_web_dir}}/system/storage/upload/');
 define('DIR_MODIFICATION', '{{oc_web_dir}}/system/storage/modification/');
 define('DIR_LOGS', '{{oc_web_dir}}/system/storage/logs/');
+{% if item is defined and item == 'admin/config.php' %}
+define('DIR_CATALOG', '{{oc_web_dir}}/catalog/');
+{% endif %}
 
 // DB
 define('DB_DRIVER', '{{oc_db_drv}}');
