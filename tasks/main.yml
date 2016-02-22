@@ -4,16 +4,22 @@
 - name: register stat of /etc/sysconfig/selinux
   stat: path=/etc/sysconfig/selinux
   register: st
+  tags:
+  - install
 
 - name: disable selinux
   selinux: policy=targeted state=permissive
   when: st.stat.exists
+  tags:
+  - install
 
 - name: disable selinux on boot
   lineinfile: dest={{item}} regexp=^SELINUX= line=SELINUX=permissive
   with_items:
     - /etc/sysconfig/selinux
   when: st.stat.exists
+  tags:
+  - install
 
 - name: install php pkgs
   yum: name={{item}} state=installed
@@ -23,6 +29,8 @@
     - php-gd
     - php-mysql
     - php-cli
+  tags:
+  - install
 
 - name: install httpd pkgs
   yum: name={{item}} state=installed
@@ -30,11 +38,15 @@
     - httpd
     - mod_ssl
   when: oc_install_httpd
+  tags:
+  - install
 
 - name: install unzip
   yum: name={{item}} state=installed
   with_items:
     - unzip
+  tags:
+  - install
 
 - name: install db server el6
   yum: name={{item}} state=installed
@@ -42,6 +54,8 @@
     - MySQL-python
     - mysql-server
   when: ansible_os_family == "RedHat" and ansible_distribution_major_version == '6' and oc_install_mysqld
+  tags:
+  - install
 
 - name: install db server el7
   yum: name={{item}} state=installed
@@ -49,16 +63,24 @@
     - MySQL-python
     - mariadb-server
   when: ansible_os_family == "RedHat" and ansible_distribution_major_version == '7' and oc_install_mysqld
+  tags:
+  - install
 
 - name: download {{oc_download_url}} to /tmp
   get_url: url={{oc_download_url}} dest=/tmp/opencart-{{oc_version}}.zip
+  tags:
+  - install
 
 - name: unzip opencart in /tmp
   unarchive: src=/tmp/opencart-{{oc_version}}.zip dest=/tmp copy=no creates=/tmp/opencart-{{oc_version}}
+  tags:
+  - install
 
 - name: stat {{oc_web_dir}}/install
   stat: path={{oc_web_dir}}/install
   register: statinstalldir
+  tags:
+  - install
 
 - name: upload opencart into {{oc_web_dir}}
   command: "cp -a /tmp/opencart-{{oc_version}}/upload/{{item}} {{oc_web_dir}}"
@@ -72,6 +94,8 @@
     - php.ini
     - system
     - admin
+  tags:
+  - install
 
 - name: upload opencart into {{oc_web_dir}}
   command: "cp -a /tmp/opencart-{{oc_version}}/upload/{{item}} {{oc_web_dir}}"
@@ -80,12 +104,16 @@
   with_items:
     - install
   when: not statinstalldir.stat.exists
+  tags:
+  - install
 
 - name: touch config.php
   copy: content="" dest={{oc_web_dir}}/{{item}} force=no owner=apache group=apache mode=0664
   with_items:
     - config.php
     - admin/config.php
+  tags:
+  - install
 
 - name: chmod g+w and chown apache:apache
   file: path={{oc_web_dir}}/{{item}} owner=apache group=apache mode=0775
@@ -98,57 +126,81 @@
     - system/storage/download
     - system/storage/upload
     - system/storage/modification
+  tags:
+  - install
 
 - name: chmod g+w and chown apache:apache
   file: path={{oc_web_dir}}/{{item}} owner=apache group=apache mode=0664
   with_items:
     - config.php
     - admin/config.php
+  tags:
+  - install
 
 - name: start webserver
   service: name={{item}} state=started enabled=true
   with_items:
     - httpd
+  tags:
+  - services
 
 - name: start db server el6
   service: name={{item}} state=started enabled=true
   with_items:
     - mysqld
   when: ansible_os_family == "RedHat" and ansible_distribution_major_version == '6'
+  tags:
+  - services
 
 - name: start db server el7
   service: name={{item}} state=started enabled=true
   with_items:
     - mariadb
   when: ansible_os_family == "RedHat" and ansible_distribution_major_version == '7'
+  tags:
+  - services
 
 - name: create opencart db in mysql
   mysql_db: name=opencart state=present
+  tags:
+  - install
 
 - name: stat {{oc_web_dir}}/install
   stat: path={{oc_web_dir}}/install
   register: statinstalldir
+  tags:
+  - install
 
 - name: run install/cli_install.php install
   command: "php {{oc_web_dir}}/install/cli_install.php install --db_hostname {{oc_db_host}} --db_username {{oc_db_user}} --db_password {{oc_db_pass}} --db_database {{oc_db_db}} --db_driver {{oc_db_drv}} --username {{oc_web_user}} --password {{oc_web_pass}} --email {{oc_email}} --http_server http://{{oc_web_host}}{{oc_web_path}}/"
   when: statinstalldir.stat.exists and statinstalldir.stat.isdir
+  tags:
+  - install
 
 - name: remove opencart install dir
   file: state=absent dest={{oc_web_dir}}/install
   when: statinstalldir.stat.exists and statinstalldir.stat.isdir
+  tags:
+  - install
 
 - name: touch install
   copy: content="" dest={{oc_web_dir}}/install force=no owner=apache group=apache mode=0664
+  tags:
+  - install
 
 - name: upload images
   copy: src=files/{{item.name}} dest={{oc_web_dir}}/image/catalog/{{item.name}} mode=0664 owner=apache group=apache
   when: item.url is not defined
   with_items: oc_images
+  tags:
+  - images
 
 - name: download images
   get_url: url={{item.url}} dest={{oc_web_dir}}/image/catalog/{{item.name}} mode=0664 owner=apache group=apache
   when: item.url is defined
   with_items: oc_images
+  tags:
+  - images
 
 - name: import schema
   mysql_db:
@@ -156,16 +208,22 @@
     state=import
     target={{ item.target }}
   with_items: oc_mysql_import
+  tags:
+  - schemaimport
 
 - name: upload local extensions
   unarchive: src={{item.file}} dest={{oc_web_dir}} creates={{item.creates}}
   with_items: oc_extensions
   when: item.creates is defined and item.file is defined
+  tags:
+  - extensions
 
 - name: download and unarchive extensions from github
   unarchive: src=https://github.com/{{item.author}}/{{item.name}}/archive/{{item.version}}.zip dest=/tmp copy=no
   with_items: oc_extensions
   when: item.source is defined and item.source == 'github' and item.author is defined and item.name is defined and item.version is defined
+  tags:
+  - extensions
 
 - name: install extensions from github
   command: "cp -a /tmp/{{item.0.name}}-{{item.0.version}}/{{item.1}} {{oc_web_dir}}/{{item.1}}"
@@ -175,6 +233,8 @@
     - oc_extensions
     - files
   when: item.0.source is defined and item.0.source == 'github' and item.0.author is defined and item.0.name is defined and item.0.version is defined
+  tags:
+  - extensions
 
 - name: link extensions from /vagrant
   file: dest={{oc_web_dir}}/{{item.1}} src=/vagrant/{{item.0.extension}}/{{item.1}} state=link
@@ -182,6 +242,8 @@
     - oc_extensions
     - files
   when: item.0.name is defined and item.0.source is defined and item.0.source == 'link' and item.1 is defined
+  tags:
+  - extensions
 
 - name: config.php template
   template: src=config.php.j2 dest={{oc_web_dir}}/{{item}}
